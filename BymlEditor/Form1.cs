@@ -8,9 +8,28 @@ namespace BymlEditor
 {
     public partial class mainForm : Form
     {
+        IDictionary<string, string> splatParamDict = new Dictionary<string, string>();
 
         public mainForm()
         {
+            try
+            {
+                string line;
+                System.IO.StreamReader splatParamDictFile = new System.IO.StreamReader(@"splatparamdict.txt");
+                while ((line = splatParamDictFile.ReadLine()) != null)
+                {
+                    string[] keyValPair = line.Split('\t');
+                    if (keyValPair.Length == 2)
+                    {
+                        splatParamDict.Add(keyValPair[0], keyValPair[1]);
+                    }
+                }
+            }
+            catch (System.IO.FileNotFoundException ex)
+            {
+                Console.WriteLine("Didn't find splatparamdict.txt");
+            }
+
             InitializeComponent();
         }
 
@@ -109,43 +128,53 @@ namespace BymlEditor
             TreeNode node;
             NodeDetails details = new NodeDetails();
 
-            if(dyn is String)
+            if (name != null && splatParamDict.ContainsKey(name))
+            {
+                name = splatParamDict[name] + " (" + name + ")";
+                Console.WriteLine(name);
+            }
+
+            if (dyn is String)
             {
                 details.id = "STRING";
                 details.type = "String";
                 details.value = dyn;
                 node = new TreeNode(name != null ? name : "String");
-            }else if(dyn is int)
+            }
+            else if (dyn is int)
             {
                 details.id = "INTEGER";
                 details.type = "Integer";
                 details.value = dyn.ToString();
                 node = new TreeNode(name != null ? name : "Integer");
-            }else if(dyn is float)
+            }
+            else if (dyn is float)
             {
                 details.id = "FLOAT";
                 details.type = "Float";
                 details.value = dyn.ToString("0.000");
                 node = new TreeNode(name != null ? name : "Float");
-            }else if(dyn is bool)
+            }
+            else if (dyn is bool)
             {
                 details.id = "BOOLEAN";
                 details.type = "Boolean";
                 details.value = dyn.ToString();
                 node = new TreeNode(name != null ? name : "Boolean");
-            }else if(dyn is IEnumerable<dynamic>)
+            }
+            else if (dyn is IEnumerable<dynamic>)
             {
                 details.id = "ARRAY_LIST";
                 details.type = "Array";
 
                 List<dynamic> list = new List<dynamic>(dyn);
                 List<TreeNode> nodes = new List<TreeNode>();
-                foreach(var i in list)
+                foreach (var i in list)
                 {
                     nodes.Add(parseDynamic(i, null));
                 }
 
-                if(list.Count == 0)
+                if (list.Count == 0)
                 {
                     details.value = "Empty List";
                 }
@@ -154,14 +183,15 @@ namespace BymlEditor
                     details.value = list.Count == 1 ? "Contains " + list.Count + " Entry" : "Contains " + list.Count + " Entries";
                 }
                 node = new TreeNode(name != null ? name : "Array", nodes.ToArray());
-            }else if(dyn is IDictionary<String, dynamic>)
+            }
+            else if (dyn is IDictionary<String, dynamic>)
             {
                 details.id = "DICTIONARY";
                 details.type = "Dictionary";
 
                 Dictionary<String, dynamic> dic = new Dictionary<String, dynamic>(dyn);
                 List<TreeNode> nodes = new List<TreeNode>();
-                foreach(var i in dic)
+                foreach (var i in dic)
                 {
                     nodes.Add(parseDynamic(i.Value, i.Key));
                 }
